@@ -9,10 +9,22 @@ import com.hazelcast.core.HazelcastInstance;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
+import java.util.Collection;
 import java.util.Scanner;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 public class Node {
     private static Logger logger = Logger.getLogger(Node.class);
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+        @Override
+        public Thread newThread(Runnable runnable) {
+            Thread thread = Executors.defaultThreadFactory().newThread(runnable);
+            thread.setDaemon(true);
+            return thread;        }
+    });
 
     private final HazelcastInstance hazelcast;
 
@@ -29,6 +41,13 @@ public class Node {
 
     public void start()
     {
+        scheduler.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                dump();
+            }
+        }, 2, 2, TimeUnit.SECONDS);
+
         clientListenerKey = hazelcast.getClientService().addClientListener(new ClientListener() {
             @Override
             public void clientConnected(Client client) {
@@ -48,6 +67,15 @@ public class Node {
     {
         hazelcast.getClientService().removeClientListener(clientListenerKey);
         hazelcast.getLifecycleService().shutdown();
+    }
+
+    private void dump() {
+        Collection<Client> clients = hazelcast.getClientService().getConnectedClients();
+        System.out.println("Clients connected: "+clients.size());
+        for(Client client : clients)
+        {
+            System.out.println("- Type: "+client.getClientType() + ", address: "+client.getSocketAddress());
+        }
     }
 
     public static void main(String[] args) {

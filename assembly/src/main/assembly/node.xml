@@ -13,6 +13,10 @@
         <filtered>true</filtered>
       </file>
       <file>
+        <source>src/main/assembly/hazelcast.xml</source>
+        <filtered>true</filtered>
+      </file>
+      <file>
         <source>src/main/assembly/runNode.cmd</source>
         <destName>_run.cmd</destName>
         <filtered>true</filtered>
